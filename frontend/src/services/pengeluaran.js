@@ -22,7 +22,9 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok || result?.success === false) {
-    throw new Error(result?.message || `Permintaan gagal (${response.status})`);
+    const error = new Error(result?.message || `Permintaan gagal (${response.status})`);
+    error.status = response.status;
+    throw error;
   }
   if (result === null || result === undefined) {
     throw new Error('Respons server tidak sesuai format.');

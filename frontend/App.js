@@ -261,6 +261,14 @@ export default function App() {
 			setScreen('list');
 			await loadData(false);
 		} catch (error) {
+			if (error.status === 404) {
+				setDeleteConfirmationVisible(false);
+				setSelectedExpense(null);
+				setScreen('list');
+				setActionError('Pengeluaran sudah tidak tersedia. Daftar telah diperbarui.');
+				await loadData(false);
+				return;
+			}
 			setActionError(error.message);
 		} finally {
 			setDeleting(false);
