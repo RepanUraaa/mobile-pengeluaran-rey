@@ -20,7 +20,6 @@ import {
 	createExpense,
 	deleteExpense,
 	getCategories,
-	getExpenseById,
 	getExpenses,
 	updateExpense,
 } from './src/services/pengeluaran';
@@ -129,8 +128,6 @@ export default function App() {
 	const [search, setSearch] = useState('');
 	const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES_FILTER);
 	const [selectedExpense, setSelectedExpense] = useState(null);
-	const [detailLoading, setDetailLoading] = useState(false);
-	const [detailState, setDetailState] = useState('ready');
 	const [formMode, setFormMode] = useState('create');
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [formErrors, setFormErrors] = useState({});
@@ -193,7 +190,7 @@ export default function App() {
 		setScreen('form');
 	}
 
-	async function openDetail(expense) {
+	function openDetail(expense) {
 		const expenseId = Number(expense?.id);
 		if (!Number.isInteger(expenseId) || expenseId <= 0) {
 			setActionError('ID pengeluaran tidak valid');
@@ -201,19 +198,11 @@ export default function App() {
 		}
 
 		setActionError('');
-		setSelectedExpense(expense);
-		setDetailState('ready');
-		setDetailLoading(true);
+		setSelectedExpense({
+			...expense,
+			id_kategori: expense.id_kategori ?? categories.find(category => category.nama === expense.kategori)?.id ?? null,
+		});
 		setScreen('detail');
-		try {
-			const detail = await getExpenseById(expenseId);
-			setSelectedExpense(detail);
-		} catch (error) {
-			setDetailState(error.message.toLowerCase().includes('tidak ditemukan') ? 'notFound' : 'error');
-			setActionError(error.message);
-		} finally {
-			setDetailLoading(false);
-		}
 	}
 
 	function updateForm(field, value) {
@@ -276,10 +265,6 @@ export default function App() {
 		} finally {
 			setDeleting(false);
 		}
-	}
-
-	function retryDetail() {
-		if (selectedExpense) openDetail(selectedExpense);
 	}
 
 	const selectedCategoryName = form.id_kategori == null
@@ -506,28 +491,7 @@ export default function App() {
 			{screen === 'detail' ? (
 				<View style={styles.page}>
 					<ScreenHeader title="Detail Pengeluaran" onBack={() => setScreen('list')} />
-					{detailLoading ? (
-						<View style={styles.centerState}>
-							<ActivityIndicator size="large" color={COLORS.green} />
-							<Text style={styles.loadingText}>Memuat detail...</Text>
-						</View>
-					) : detailState === 'notFound' ? (
-						<Notice
-							title="Data tidak ditemukan"
-							description="Pengeluaran ini mungkin sudah dihapus."
-							actionLabel="Kembali"
-							onAction={() => setScreen('list')}
-							tone="error"
-						/>
-					) : detailState === 'error' ? (
-						<Notice
-							title="Gagal memuat detail"
-							description={actionError || 'Terjadi kesalahan saat mengambil data.'}
-							actionLabel="Coba lagi"
-							onAction={retryDetail}
-							tone="error"
-						/>
-					) : selectedExpense ? (
+					{selectedExpense ? (
 						<ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
 							{actionError ? <Text accessibilityRole="alert" style={styles.inlineError}>{actionError}</Text> : null}
 							<View style={styles.detailCard}>
