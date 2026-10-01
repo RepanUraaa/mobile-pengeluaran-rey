@@ -1,16 +1,7 @@
-export const CATEGORIES = [
-  { id: 2, nama: 'Makanan' },
-  { id: 3, nama: 'Transport' },
-  { id: 1, nama: 'Pendidikan' },
-  { id: 4, nama: 'Hiburan' },
-];
+export const ALL_CATEGORIES_FILTER = 'all';
 
-export const FILTERS = ['Semua', ...CATEGORIES.map(category => category.nama)];
-
-export function getCategoryId(name) {
-  return CATEGORIES.find(category => category.nama === name)?.id ?? null;
-}
-
-export function getCategoryName(id) {
-  return CATEGORIES.find(category => category.id === id)?.nama || '';
+export function getCategoryName(expense, categories) {
+  if (expense.kategori) return expense.kategori;
+  if (expense.id_kategori == null) return 'Tanpa kategori';
+  return categories.find(category => String(category.id) === String(expense.id_kategori))?.nama ?? 'Tanpa kategori';
 }

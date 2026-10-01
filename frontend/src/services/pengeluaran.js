@@ -4,53 +4,47 @@ async function request(path, options = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers: {
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...options.headers,
+      },
     });
   } catch {
-    throw new Error('Tidak dapat terhubung ke server. Periksa API base URL dan koneksi jaringan.');
+    throw new Error('Tidak dapat terhubung ke server. Periksa koneksi dan alamat API.');
   }
 
-  let body = null;
-  if (response.status !== 204) {
-    const text = await response.text();
-    if (text) {
-      try {
-        body = JSON.parse(text);
-      } catch {
-        body = null;
-      }
-    }
-  }
-
-  if (!response.ok) {
-    const error = new Error(body?.pesan || body?.message || `Permintaan gagal (${response.status})`);
-    error.status = response.status;
-    throw error;
-  }
-  return body;
-}
-
-export async function getExpenses() {
-  const data = await request('/pengeluaran');
-  return Array.isArray(data) ? data : [];
-}
-
-export async function searchExpenses(query) {
+  let result;
   try {
-    const data = await request(`/pengeluaran/${encodeURIComponent(query)}`);
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    if (error.status === 404) return [];
-    throw error;
+    result = await response.json();
+  } catch {
+    result = null;
   }
+
+  if (!response.ok || result?.success === false) {
+    throw new Error(result?.message || `Permintaan gagal (${response.status})`);
+  }
+  if (result === null || result === undefined) {
+    throw new Error('Respons server tidak sesuai format.');
+  }
+
+  if (Object.prototype.hasOwnProperty.call(result, 'data')) {
+    return result.data;
+  }
+
+  return result;
+}
+
+export function getExpenses() {
+  return request('/pengeluaran');
+}
+
+export function getExpenseById(id) {
+  return request(`/pengeluaran/${encodeURIComponent(id)}`);
 }
 
 export function createExpense(expense) {
-  return request('/pengeluaran', {
-    method: 'POST',
-    body: JSON.stringify(expense),
-  });
+  return request('/pengeluaran', { method: 'POST', body: JSON.stringify(expense) });
 }
 
 export function updateExpense(id, expense) {
@@ -62,4 +56,8 @@ export function updateExpense(id, expense) {
 
 export function deleteExpense(id) {
   return request(`/pengeluaran/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function getCategories() {
+  return request('/kategori');
 }

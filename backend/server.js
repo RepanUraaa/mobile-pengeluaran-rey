@@ -36,12 +36,31 @@ app.get('/pengeluaran', async (req, res) => {
 
 
 // ==================================================
-// 2. GET PENGELUARAN / NAMA MHS
-// Mencari data berdasarkan nama mahasiswa
+// 2. GET PENGELUARAN BY ID OR JUDUL
+// Numeric parameters load one record; text parameters search titles.
 // ==================================================
 
-app.get('/pengeluaran/:nama', async (req, res) => {
+app.get('/pengeluaran/:id', async (req, res) => {
   try {
+    if (/^\d+$/.test(req.params.id)) {
+      const [rows] = await pool.query(
+        `SELECT p.id, p.judul, p.nominal, p.tanggal, p.catatan,
+                k.nama AS kategori
+         FROM pengeluaran p
+         LEFT JOIN kategori k ON p.id_kategori = k.id
+         WHERE p.id = ?`,
+        [req.params.id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          pesan: 'Data tidak ditemukan'
+        });
+      }
+
+      return res.json(rows[0]);
+    }
+
     const [rows] = await pool.query(
       `SELECT p.id, p.judul, p.nominal, p.tanggal, p.catatan,
               k.nama AS kategori
@@ -49,7 +68,7 @@ app.get('/pengeluaran/:nama', async (req, res) => {
        LEFT JOIN kategori k ON p.id_kategori = k.id
        WHERE p.judul LIKE ?
        ORDER BY p.tanggal DESC`,
-      [`%${req.params.nama}%`]
+      [`%${req.params.id}%`]
     );
 
     if (rows.length === 0) {
@@ -171,6 +190,26 @@ app.delete('/pengeluaran/:id', async (req, res) => {
     console.error(e);
     res.status(500).json({
       pesan: 'Gagal menghapus data'
+    });
+  }
+});
+
+// ==================================================
+// 6. GET KATEGORI
+// Menampilkan semua kategori
+// ==================================================
+
+app.get('/kategori', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, nama FROM kategori ORDER BY id ASC'
+    );
+
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      pesan: 'Gagal mengambil data kategori'
     });
   }
 });

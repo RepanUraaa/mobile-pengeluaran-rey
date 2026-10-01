@@ -1,2 +1,3 @@
-// LAN API host used by Expo Go on the development device.
-export const API_BASE_URL = 'http://192.168.100.16:3000';
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+export const API_BASE_URL = (configuredApiUrl || 'http://192.168.100.16:3000').replace(/\/$/, '');
